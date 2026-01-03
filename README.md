@@ -1,46 +1,73 @@
-# Getting Started with Create React App
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+# Workflow Orchestration System
 
-## Available Scripts
+>A visual workflow orchestration system. Drag, drop, and combine tasks to quickly build automation workflows.
 
-In the project directory, you can run:
+## Features
 
-### `npm start`
+- **Task Panel**: All available task types are shown on the left, with search, collapsible categories, and drag-and-drop support.
+- **Visual Canvas**: Drag task nodes onto the center canvas and connect them to form workflows.
+- **Node Configuration**: Edit node names, view type and description, or delete nodes in the right panel.
+- **Connections & Branching**: Connect nodes, and use condition/switch/loop logic.
+- **Export & Clear**: Export the current workflow as JSON or clear the canvas.
+- **Responsive Design**: Works on both desktop and mobile.
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+## Example Task Types
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+| Category   | Tasks                                                      |
+|------------|------------------------------------------------------------|
+| Trigger    | HTTP Trigger, Schedule Trigger, Webhook                    |
+| Action     | HTTP Request, Send Email, Database Query, File Operation, Notification |
+| Condition  | If Condition, Switch, Loop                                 |
+| Transform  | Data Transform, JSON Parse, Filter, Aggregate              |
 
-### `npm test`
+## Quick Start
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+1. Install dependencies:
+	```bash
+	npm install
+	```
+2. Start the development server:
+	```bash
+	npm start
+	```
+	Then open [http://localhost:3000](http://localhost:3000) in your browser.
 
-### `npm run build`
+## Usage
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+1. Drag a task from the left panel onto the canvas to create a node.
+2. Drag from the bottom handle of a node to the top of another to connect them.
+3. Click a node to edit its name, view its type and description, or delete it in the right panel.
+4. Use the toolbar in the top-right to clear the canvas or export the workflow.
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+## Tech Stack
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+- React 19
+- TypeScript
+- [@xyflow/react](https://xyflow.com/) (formerly react-flow)
+- uuid
 
-### `npm run eject`
+## Project Structure
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+```
+src/
+  components/         # Main UI components (canvas, task panel, nodes, etc.)
+  types/              # Task type definitions
+  styles/             # Stylesheets
+  App.tsx             # Entry point
+  ...
+```
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+## Build & Deploy
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+```bash
+npm run build
+# The static files will be in the build/ directory and can be deployed to any static server.
+```
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+## Contributing
 
-## Learn More
+Contributions are welcome! Please open issues or pull requests to help improve this project.
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
+---
+This project was bootstrapped with Create React App and is now a fully customized workflow orchestration system.
