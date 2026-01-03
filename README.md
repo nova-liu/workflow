@@ -1,7 +1,6 @@
-
 # Workflow Orchestration System
 
->A visual workflow orchestration system. Drag, drop, and combine tasks to quickly build automation workflows.
+> A visual workflow orchestration system. Drag, drop, and combine tasks to quickly build automation workflows.
 
 ## Features
 
@@ -14,24 +13,24 @@
 
 ## Example Task Types
 
-| Category   | Tasks                                                      |
-|------------|------------------------------------------------------------|
-| Trigger    | HTTP Trigger, Schedule Trigger, Webhook                    |
-| Action     | HTTP Request, Send Email, Database Query, File Operation, Notification |
-| Condition  | If Condition, Switch, Loop                                 |
-| Transform  | Data Transform, JSON Parse, Filter, Aggregate              |
+| Category  | Tasks                                                                  |
+| --------- | ---------------------------------------------------------------------- |
+| Trigger   | HTTP Trigger, Schedule Trigger, Webhook                                |
+| Action    | HTTP Request, Send Email, Database Query, File Operation, Notification |
+| Condition | If Condition, Switch, Loop                                             |
+| Transform | Data Transform, JSON Parse, Filter, Aggregate                          |
 
 ## Quick Start
 
 1. Install dependencies:
-	```bash
-	npm install
-	```
+   ```bash
+   npm install
+   ```
 2. Start the development server:
-	```bash
-	npm start
-	```
-	Then open [http://localhost:3000](http://localhost:3000) in your browser.
+   ```bash
+   npm start
+   ```
+   Then open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ## Usage
 
@@ -70,4 +69,5 @@ npm run build
 Contributions are welcome! Please open issues or pull requests to help improve this project.
 
 ---
+
 This project was bootstrapped with Create React App and is now a fully customized workflow orchestration system.
