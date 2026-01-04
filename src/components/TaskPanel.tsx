@@ -1,10 +1,6 @@
 import React, { useState } from "react";
-import {
-  TASK_TYPES,
-  TaskType,
-  TaskCategory,
-  CATEGORY_NAMES,
-} from "../types/workflow";
+import { TaskType, TaskCategory, CATEGORY_NAMES } from "../types/workflow";
+import { useTaskTypes } from "../hooks/useTaskTypes";
 
 interface TaskPanelProps {
   onDragStart: (event: React.DragEvent, taskType: TaskType) => void;
@@ -18,6 +14,9 @@ const TaskPanel: React.FC<TaskPanelProps> = ({ onDragStart }) => {
     () => new Set<TaskCategory>(["trigger", "action", "condition", "transform"])
   );
 
+  // 从后端获取任务类型
+  const { taskTypes, loading, error, refresh } = useTaskTypes();
+
   const toggleCategory = (category: TaskCategory) => {
     const newExpanded = new Set(expandedCategories);
     if (newExpanded.has(category)) {
@@ -28,7 +27,7 @@ const TaskPanel: React.FC<TaskPanelProps> = ({ onDragStart }) => {
     setExpandedCategories(newExpanded);
   };
 
-  const filteredTasks = TASK_TYPES.filter(
+  const filteredTasks = taskTypes.filter(
     (task) =>
       task.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       task.description.toLowerCase().includes(searchTerm.toLowerCase())
@@ -48,6 +47,39 @@ const TaskPanel: React.FC<TaskPanelProps> = ({ onDragStart }) => {
     "condition",
     "transform",
   ];
+
+  // 加载中状态
+  if (loading) {
+    return (
+      <div className="task-panel">
+        <div className="task-panel-header">
+          <h3>📦 任务面板</h3>
+        </div>
+        <div className="task-panel-loading">
+          <div className="loading-spinner"></div>
+          <span>加载任务列表...</span>
+        </div>
+      </div>
+    );
+  }
+
+  // 错误状态
+  if (error) {
+    return (
+      <div className="task-panel">
+        <div className="task-panel-header">
+          <h3>📦 任务面板</h3>
+        </div>
+        <div className="task-panel-error">
+          <span className="error-icon">⚠️</span>
+          <span className="error-message">{error}</span>
+          <button className="retry-button" onClick={refresh}>
+            重试
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="task-panel">
@@ -104,6 +136,15 @@ const TaskPanel: React.FC<TaskPanelProps> = ({ onDragStart }) => {
             </div>
           );
         })}
+
+        {taskTypes.length === 0 && (
+          <div className="task-panel-empty">
+            <span>暂无可用任务</span>
+            <button className="retry-button" onClick={refresh}>
+              刷新
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="task-panel-footer">

@@ -155,6 +155,85 @@
   text-overflow: ellipsis;
 }
 
+/* 任务面板加载状态 */
+.task-panel-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  color: #888;
+  gap: 12px;
+}
+
+.task-panel-loading .loading-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid #0f3460;
+  border-top-color: #e94560;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+/* 任务面板错误状态 */
+.task-panel-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40px 20px;
+  text-align: center;
+  gap: 12px;
+}
+
+.task-panel-error .error-icon {
+  font-size: 32px;
+}
+
+.task-panel-error .error-message {
+  color: #ff6b6b;
+  font-size: 13px;
+}
+
+.task-panel-error .retry-button {
+  padding: 8px 20px;
+  background: #e94560;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: background 0.2s;
+}
+
+.task-panel-error .retry-button:hover {
+  background: #ff6b6b;
+}
+
+/* 任务面板空状态 */
+.task-panel-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40px 20px;
+  color: #888;
+  gap: 12px;
+}
+
+.task-panel-empty .retry-button {
+  padding: 6px 16px;
+  background: #0f3460;
+  color: #eee;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: background 0.2s;
+}
+
+.task-panel-empty .retry-button:hover {
+  background: #16213e;
+}
+
 /* 工作流画布样式 */
 .workflow-canvas {
   flex: 1;
@@ -406,6 +485,160 @@
   background: #e94560;
 }
 
+/* 任务参数配置面板样式 */
+.config-panel {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #0f3460;
+}
+
+.config-panel.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 20px;
+  color: #888;
+}
+
+.config-panel.error {
+  padding: 16px;
+  text-align: center;
+  color: #e94560;
+}
+
+.config-panel.no-config {
+  padding: 16px;
+  text-align: center;
+  color: #888;
+}
+
+.config-panel-header h4 {
+  margin: 0 0 16px 0;
+  font-size: 14px;
+  color: #fff;
+}
+
+.config-panel-params {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.param-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.param-label {
+  font-size: 12px;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.required-mark {
+  color: #e94560;
+  margin-left: 4px;
+}
+
+.param-input,
+.param-select,
+.param-textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #0f3460;
+  border-radius: 6px;
+  background: #1a1a2e;
+  color: #eee;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+.param-input:focus,
+.param-select:focus,
+.param-textarea:focus {
+  outline: none;
+  border-color: #e94560;
+}
+
+.param-select {
+  cursor: pointer;
+}
+
+.param-textarea {
+  resize: vertical;
+  font-family: monospace;
+  min-height: 80px;
+}
+
+.param-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 8px 0;
+}
+
+.param-checkbox input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: #e94560;
+}
+
+.checkbox-label {
+  font-size: 14px;
+  color: #eee;
+}
+
+.param-description {
+  font-size: 11px;
+  color: #666;
+  line-height: 1.4;
+}
+
+.cron-input-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cron-help {
+  font-size: 10px;
+  color: #666;
+  font-family: monospace;
+}
+
+/* loading spinner 通用样式 */
+.loading-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #0f3460;
+  border-top-color: #e94560;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.result-data pre {
+  margin: 0;
+  padding: 10px;
+  background: #0d1b2a;
+  border-radius: 4px;
+  font-size: 11px;
+  color: #aaa;
+  white-space: pre-wrap;
+  word-break: break-all;
+  font-family: "Monaco", "Menlo", monospace;
+}
+
 /* 响应式设计 */
 @media (max-width: 1024px) {
   .task-panel {
@@ -443,4 +676,326 @@
     border-left: none;
     border-top: 1px solid #0f3460;
   }
+}
+
+/* 执行按钮样式 */
+.toolbar-btn.execute {
+  background: linear-gradient(135deg, #4caf50 0%, #8bc34a 100%);
+  color: white;
+}
+
+.toolbar-btn.execute:hover:not(:disabled) {
+  background: linear-gradient(135deg, #66bb6a 0%, #9ccc65 100%);
+}
+
+.toolbar-btn.execute:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.toolbar-btn.secondary {
+  background: #0f3460;
+  color: #eee;
+}
+
+.toolbar-btn.secondary:hover {
+  background: #1a4a7a;
+}
+
+/* 执行日志面板样式 */
+.execution-log-panel {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 600px;
+  max-width: calc(100% - 40px);
+  max-height: 400px;
+  background: #16213e;
+  border: 1px solid #0f3460;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  display: flex;
+  flex-direction: column;
+  z-index: 1000;
+  overflow: hidden;
+}
+
+.log-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: #0f3460;
+  border-bottom: 1px solid #1a4a7a;
+}
+
+.log-panel-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.log-status-icon {
+  font-size: 16px;
+}
+
+.log-status-badge {
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.log-status-badge.idle {
+  background: #444;
+  color: #aaa;
+}
+
+.log-status-badge.running {
+  background: #2196f3;
+  color: white;
+  animation: pulse 1.5s infinite;
+}
+
+.log-status-badge.success {
+  background: #4caf50;
+  color: white;
+}
+
+.log-status-badge.error {
+  background: #e94560;
+  color: white;
+}
+
+.log-status-badge.cancelled {
+  background: #ff9800;
+  color: white;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.log-panel-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.log-cancel-btn {
+  padding: 4px 12px;
+  border: 1px solid #e94560;
+  border-radius: 4px;
+  background: transparent;
+  color: #e94560;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.log-cancel-btn:hover {
+  background: #e94560;
+  color: white;
+}
+
+.log-close-btn {
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: #888;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.log-close-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.log-panel-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+  min-height: 150px;
+  max-height: 280px;
+}
+
+.log-empty {
+  text-align: center;
+  color: #666;
+  padding: 40px 20px;
+}
+
+.log-entry {
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  background: #1a1a2e;
+  border-radius: 8px;
+  border-left: 3px solid #444;
+}
+
+.log-entry.running {
+  border-left-color: #2196f3;
+}
+
+.log-entry.success {
+  border-left-color: #4caf50;
+}
+
+.log-entry.error {
+  border-left-color: #e94560;
+}
+
+.log-entry.pending {
+  border-left-color: #888;
+}
+
+.log-entry-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.log-entry-icon {
+  font-size: 12px;
+}
+
+.log-entry-time {
+  font-size: 11px;
+  color: #666;
+  font-family: monospace;
+}
+
+.log-entry-node {
+  font-size: 12px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.log-entry-duration {
+  margin-left: auto;
+  font-size: 11px;
+  color: #888;
+  font-family: monospace;
+}
+
+.log-entry-message {
+  font-size: 12px;
+  color: #aaa;
+  line-height: 1.4;
+}
+
+.log-entry-details {
+  margin-top: 8px;
+  border: 1px solid #0f3460;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.log-entry-details summary {
+  font-size: 11px;
+  color: #888;
+  cursor: pointer;
+  user-select: none;
+  padding: 8px 12px;
+  background: rgba(15, 52, 96, 0.3);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.log-entry-details summary:hover {
+  background: rgba(15, 52, 96, 0.5);
+  color: #aaa;
+}
+
+.log-entry-details[open] summary {
+  border-bottom: 1px solid #0f3460;
+}
+
+/* JSON 显示样式 */
+.json-display {
+  padding: 8px;
+  background: #0d1b2a;
+}
+
+.json-display-title {
+  font-size: 10px;
+  color: #666;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+}
+
+.json-display-content {
+  margin: 0;
+  padding: 0;
+  font-size: 11px;
+  color: #4fc3f7;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+  font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
+  line-height: 1.5;
+}
+
+/* 旧的 pre 样式保持兼容 */
+.log-entry-details pre {
+  margin: 0;
+  padding: 8px;
+  background: #0d1b2a;
+  border-radius: 0;
+  font-size: 11px;
+  color: #4fc3f7;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+  font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
+}
+
+.log-running-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px;
+  color: #888;
+  font-size: 13px;
+}
+
+.log-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #0f3460;
+  border-top-color: #2196f3;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.log-panel-footer {
+  padding: 10px 16px;
+  font-size: 12px;
+  border-top: 1px solid #0f3460;
+}
+
+.log-panel-footer.success {
+  background: rgba(76, 175, 80, 0.1);
+  color: #4caf50;
+}
+
+.log-panel-footer.error {
+  background: rgba(233, 69, 96, 0.1);
+  color: #e94560;
 }

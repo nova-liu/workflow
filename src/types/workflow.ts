@@ -1,4 +1,40 @@
-// 任务类型定义
+// 任务执行输入 - 通用 JSON 格式
+export interface TaskInput {
+  [key: string]: unknown;
+}
+
+// 任务执行输出 - 必须包含 error 字段
+export interface TaskOutput {
+  error: string | null; // 空或 null 代表执行成功
+  data?: unknown; // 任务返回的数据
+  [key: string]: unknown; // 其他自定义输出字段
+}
+
+// 任务执行器函数类型 - 每个任务类型对应一段可执行的 TS 脚本
+export type TaskExecutor = (input: TaskInput) => Promise<TaskOutput>;
+
+// 任务脚本定义
+export interface TaskScript {
+  // 脚本源代码
+  code: string;
+  // 输入参数的 JSON Schema（用于验证）
+  inputSchema?: Record<string, unknown>;
+  // 输出参数的 JSON Schema（用于验证）
+  outputSchema?: Record<string, unknown>;
+}
+
+// 任务参数配置
+export interface TaskParamConfig {
+  name: string;
+  type: string;
+  label: string;
+  required: boolean;
+  default?: unknown;
+  description?: string;
+  options?: { label: string; value: unknown }[];
+}
+
+// 任务类型定义（从后端获取）
 export interface TaskType {
   id: string;
   name: string;
@@ -6,140 +42,58 @@ export interface TaskType {
   color: string;
   description: string;
   category: TaskCategory;
+  // 参数配置（从后端获取）
+  params?: TaskParamConfig[];
+  // 任务对应的可执行脚本
+  script?: TaskScript;
+  // 默认执行器（内置任务）
+  executor?: TaskExecutor;
 }
 
 export type TaskCategory = "trigger" | "action" | "condition" | "transform";
 
-// 预定义的任务类型
-export const TASK_TYPES: TaskType[] = [
-  // 触发器
-  {
-    id: "http-trigger",
-    name: "HTTP 触发器",
-    icon: "🌐",
-    color: "#4CAF50",
-    description: "通过 HTTP 请求触发工作流",
-    category: "trigger",
-  },
-  {
-    id: "schedule-trigger",
-    name: "定时触发器",
-    icon: "⏰",
-    color: "#4CAF50",
-    description: "按照设定的时间计划触发",
-    category: "trigger",
-  },
-  {
-    id: "webhook-trigger",
-    name: "Webhook",
-    icon: "🔔",
-    color: "#4CAF50",
-    description: "接收外部 Webhook 调用",
-    category: "trigger",
-  },
+// 分类配置
+export interface CategoryConfig {
+  icon: string;
+  color: string;
+}
 
-  // 操作
-  {
-    id: "http-request",
-    name: "HTTP 请求",
-    icon: "📡",
-    color: "#2196F3",
-    description: "发送 HTTP 请求",
-    category: "action",
-  },
-  {
-    id: "email-send",
-    name: "发送邮件",
-    icon: "📧",
-    color: "#2196F3",
-    description: "发送电子邮件",
-    category: "action",
-  },
-  {
-    id: "database-query",
-    name: "数据库查询",
-    icon: "🗄️",
-    color: "#2196F3",
-    description: "执行数据库查询",
-    category: "action",
-  },
-  {
-    id: "file-operation",
-    name: "文件操作",
-    icon: "📁",
-    color: "#2196F3",
-    description: "读取或写入文件",
-    category: "action",
-  },
-  {
-    id: "notification",
-    name: "发送通知",
-    icon: "🔔",
-    color: "#2196F3",
-    description: "发送推送通知",
-    category: "action",
-  },
+// 默认分类图标和颜色映射
+export const CATEGORY_CONFIG: Record<TaskCategory, CategoryConfig> = {
+  trigger: { icon: "🎯", color: "#4CAF50" },
+  action: { icon: "⚡", color: "#2196F3" },
+  condition: { icon: "❓", color: "#FF9800" },
+  transform: { icon: "🔄", color: "#9C27B0" },
+};
 
-  // 条件
-  {
-    id: "if-condition",
-    name: "条件判断",
-    icon: "❓",
-    color: "#FF9800",
-    description: "根据条件分支执行",
-    category: "condition",
-  },
-  {
-    id: "switch",
-    name: "多路分支",
-    icon: "🔀",
-    color: "#FF9800",
-    description: "根据值选择不同分支",
-    category: "condition",
-  },
-  {
-    id: "loop",
-    name: "循环",
-    icon: "🔄",
-    color: "#FF9800",
-    description: "循环执行任务",
-    category: "condition",
-  },
+// 默认任务图标映射（根据任务 ID 前缀）
+export const getTaskIcon = (taskId: string): string => {
+  const iconMap: Record<string, string> = {
+    http: "🌐",
+    schedule: "⏰",
+    webhook: "🔔",
+    delay: "⏱️",
+    log: "📝",
+    email: "📧",
+    database: "🗄️",
+    file: "📁",
+    notification: "🔔",
+    if: "❓",
+    switch: "🔀",
+    loop: "🔄",
+    data: "🔧",
+    json: "📋",
+    filter: "🔍",
+    aggregate: "📊",
+  };
 
-  // 转换
-  {
-    id: "data-transform",
-    name: "数据转换",
-    icon: "🔧",
-    color: "#9C27B0",
-    description: "转换数据格式",
-    category: "transform",
-  },
-  {
-    id: "json-parse",
-    name: "JSON 解析",
-    icon: "📋",
-    color: "#9C27B0",
-    description: "解析 JSON 数据",
-    category: "transform",
-  },
-  {
-    id: "filter",
-    name: "数据过滤",
-    icon: "🔍",
-    color: "#9C27B0",
-    description: "过滤数据",
-    category: "transform",
-  },
-  {
-    id: "aggregate",
-    name: "数据聚合",
-    icon: "📊",
-    color: "#9C27B0",
-    description: "聚合数据",
-    category: "transform",
-  },
-];
+  for (const [prefix, icon] of Object.entries(iconMap)) {
+    if (taskId.startsWith(prefix)) {
+      return icon;
+    }
+  }
+  return "📦"; // 默认图标
+};
 
 // 获取分类名称
 export const CATEGORY_NAMES: Record<TaskCategory, string> = {
@@ -147,4 +101,24 @@ export const CATEGORY_NAMES: Record<TaskCategory, string> = {
   action: "操作",
   condition: "条件",
   transform: "转换",
+};
+
+// 创建成功的任务输出
+export const createSuccessOutput = (data?: unknown): TaskOutput => ({
+  error: null,
+  data,
+});
+
+// 创建失败的任务输出
+export const createErrorOutput = (
+  error: string,
+  data?: unknown
+): TaskOutput => ({
+  error,
+  data,
+});
+
+// 检查任务是否执行成功
+export const isTaskSuccess = (output: TaskOutput): boolean => {
+  return output.error === null || output.error === "";
 };
