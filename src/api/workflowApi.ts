@@ -97,63 +97,111 @@ export async function getTaskConfig(taskType: string): Promise<TaskConfig> {
   return response.json();
 }
 
-// 执行工作流
-export async function executeWorkflow(
-  workflow: Workflow
-): Promise<WorkflowExecutionResult> {
-  const response = await fetch(`${API_BASE_URL}/workflow/execute`, {
+// 执行工作流（流式）
+export function executeWorkflowStream(
+  workflow: Workflow,
+  callbacks: {
+    onNodeStart?: (log: NodeExecutionLog) => void;
+    onNodeComplete?: (log: NodeExecutionLog) => void;
+    onComplete?: (result: WorkflowExecutionResult) => void;
+    onError?: (error: string) => void;
+  }
+): () => void {
+  const controller = new AbortController();
+
+  fetch(`${API_BASE_URL}/workflow/execute`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({ workflow }),
-  });
+    signal: controller.signal,
+  })
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error("执行工作流失败");
+      }
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`执行工作流失败: ${errorText}`);
-  }
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error("无法读取响应流");
+      }
 
-  return response.json();
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      const processStream = async () => {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+
+          // 按双换行分割事件
+          const events = buffer.split("\n\n");
+          buffer = events.pop() || "";
+
+          for (const eventBlock of events) {
+            if (!eventBlock.trim()) continue;
+
+            const lines = eventBlock.split("\n");
+            let eventType = "";
+            let eventData = "";
+
+            for (const line of lines) {
+              if (line.startsWith("event: ")) {
+                eventType = line.slice(7).trim();
+              } else if (line.startsWith("data: ")) {
+                eventData = line.slice(6);
+              }
+            }
+
+            if (eventType && eventData) {
+              try {
+                const parsed = JSON.parse(eventData);
+                switch (eventType) {
+                  case "node_start":
+                    callbacks.onNodeStart?.(parsed as NodeExecutionLog);
+                    break;
+                  case "node_complete":
+                    callbacks.onNodeComplete?.(parsed as NodeExecutionLog);
+                    break;
+                  case "complete":
+                    callbacks.onComplete?.(parsed as WorkflowExecutionResult);
+                    break;
+                }
+              } catch (e) {
+                console.error("解析 SSE 数据失败:", e, eventData);
+              }
+            }
+          }
+        }
+      };
+
+      processStream().catch((err) => {
+        if (err.name !== "AbortError") {
+          callbacks.onError?.(err.message);
+        }
+      });
+    })
+    .catch((err) => {
+      if (err.name !== "AbortError") {
+        callbacks.onError?.(err.message);
+      }
+    });
+
+  // 返回取消函数
+  return () => controller.abort();
 }
 
-// 实时执行工作流（带回调）
-export async function executeWorkflowWithCallbacks(
-  workflow: Workflow,
-  callbacks: {
-    onNodeStart?: (nodeId: string, nodeName: string) => void;
-    onNodeComplete?: (
-      nodeId: string,
-      nodeName: string,
-      output: TaskOutput
-    ) => void;
-    onNodeError?: (nodeId: string, nodeName: string, error: string) => void;
-    onComplete?: (result: WorkflowExecutionResult) => void;
-  }
+// 执行工作流（同步，兼容旧接口）
+export async function executeWorkflow(
+  workflow: Workflow
 ): Promise<WorkflowExecutionResult> {
-  // 标记所有节点为 pending
-  workflow.nodes.forEach((node) => {
-    callbacks.onNodeStart?.(node.id, node.label);
+  return new Promise((resolve, reject) => {
+    executeWorkflowStream(workflow, {
+      onComplete: resolve,
+      onError: (error) => reject(new Error(error)),
+    });
   });
-
-  // 执行工作流
-  const result = await executeWorkflow(workflow);
-
-  // 通知各节点执行结果
-  result.logs.forEach((log) => {
-    if (log.status === "success") {
-      callbacks.onNodeComplete?.(log.nodeId, log.nodeName, log.output!);
-    } else if (log.status === "error") {
-      callbacks.onNodeError?.(
-        log.nodeId,
-        log.nodeName,
-        log.output?.error || "未知错误"
-      );
-    }
-  });
-
-  // 通知完成
-  callbacks.onComplete?.(result);
-
-  return result;
 }

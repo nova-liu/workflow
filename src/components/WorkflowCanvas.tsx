@@ -15,6 +15,7 @@ import {
   OnConnect,
   useReactFlow,
   Panel,
+  MarkerType,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { v4 as uuidv4 } from "uuid";
@@ -26,13 +27,13 @@ import {
   LoadingOutlined,
   ClearOutlined,
 } from "@ant-design/icons";
-import TaskNode, { TaskNodeData, ExecutionLog } from "./TaskNode";
+import TaskNode, { TaskNodeData } from "./TaskNode";
 import TaskPanel from "./TaskPanel";
 import TaskConfigPanel from "./TaskConfigPanel";
 import { TaskType, TaskInput } from "../types/workflow";
 import { ExecutionStatus } from "../engine/WorkflowExecutor";
 import {
-  executeWorkflow as apiExecuteWorkflow,
+  executeWorkflowStream,
   Workflow,
   NodeExecutionLog,
 } from "../api/workflowApi";
@@ -66,6 +67,12 @@ const WorkflowCanvasInner: React.FC = () => {
             type: "smoothstep",
             animated: true,
             style: { stroke: "#555", strokeWidth: 2 },
+            markerEnd: {
+              type: MarkerType.ArrowClosed,
+              color: "#555",
+              width: 20,
+              height: 20,
+            },
           },
           eds
         )
@@ -159,20 +166,11 @@ const WorkflowCanvasInner: React.FC = () => {
   }, [nodes, edges]);
 
   // 执行工作流
-  const executeWorkflow = useCallback(async () => {
+  const executeWorkflow = useCallback(() => {
     if (nodes.length === 0) {
       message.warning("请先添加任务节点");
       return;
     }
-
-    // 重置所有节点的执行日志
-    setNodes((nds) =>
-      nds.map((node) => ({
-        ...node,
-        data: { ...node.data, executionLog: undefined },
-      }))
-    );
-    setExecutionStatus("running");
 
     // 设置所有节点为 pending 状态
     setNodes((nds) =>
@@ -184,6 +182,7 @@ const WorkflowCanvasInner: React.FC = () => {
         },
       }))
     );
+    setExecutionStatus("running");
 
     // 构建工作流数据
     const workflow: Workflow = {
@@ -203,48 +202,58 @@ const WorkflowCanvasInner: React.FC = () => {
       })),
     };
 
-    try {
-      // 调用后端 API 执行
-      const result = await apiExecuteWorkflow(workflow);
-
-      // 更新每个节点的执行日志
-      const nodeLogMap = new Map<string, ExecutionLog>();
-      result.logs.forEach((log: NodeExecutionLog) => {
-        if (log.status === "success" || log.status === "error") {
-          nodeLogMap.set(log.nodeId, {
-            status: log.status as "success" | "error",
-            input: log.input,
-            output: log.output,
-            duration: log.duration,
-          });
+    // 使用流式 API 执行工作流
+    executeWorkflowStream(workflow, {
+      onNodeStart: (log: NodeExecutionLog) => {
+        // 节点开始执行，更新为 running 状态
+        setNodes((nds) =>
+          nds.map((node) =>
+            node.id === log.nodeId
+              ? {
+                  ...node,
+                  data: {
+                    ...node.data,
+                    executionLog: { status: "running" as const },
+                  },
+                }
+              : node
+          )
+        );
+      },
+      onNodeComplete: (log: NodeExecutionLog) => {
+        // 节点执行完成，更新状态和日志
+        setNodes((nds) =>
+          nds.map((node) =>
+            node.id === log.nodeId
+              ? {
+                  ...node,
+                  data: {
+                    ...node.data,
+                    executionLog: {
+                      status: log.status as "success" | "error",
+                      input: log.input,
+                      output: log.output,
+                      duration: log.duration,
+                    },
+                  },
+                }
+              : node
+          )
+        );
+      },
+      onComplete: (result) => {
+        setExecutionStatus(result.status === "success" ? "completed" : "error");
+        if (result.status === "success") {
+          message.success("工作流执行成功");
+        } else {
+          message.error(`工作流执行失败: ${result.error}`);
         }
-      });
-
-      setNodes((nds) =>
-        nds.map((node) => {
-          const log = nodeLogMap.get(node.id);
-          return {
-            ...node,
-            data: {
-              ...node.data,
-              executionLog: log || { status: "skipped" as const },
-            },
-          };
-        })
-      );
-
-      setExecutionStatus(result.status === "success" ? "completed" : "error");
-
-      if (result.status === "success") {
-        message.success("工作流执行成功");
-      } else {
-        message.error(`工作流执行失败: ${result.error}`);
-      }
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "未知错误";
-      setExecutionStatus("error");
-      message.error(`执行失败: ${errorMessage}`);
-    }
+      },
+      onError: (errorMessage) => {
+        setExecutionStatus("error");
+        message.error(`执行失败: ${errorMessage}`);
+      },
+    });
   }, [nodes, edges, setNodes]);
 
   // 清除执行日志
@@ -280,6 +289,13 @@ const WorkflowCanvasInner: React.FC = () => {
           defaultEdgeOptions={{
             type: "smoothstep",
             animated: true,
+            style: { stroke: "#555", strokeWidth: 2 },
+            markerEnd: {
+              type: MarkerType.ArrowClosed,
+              color: "#555",
+              width: 20,
+              height: 20,
+            },
           }}
         >
           <Controls />

@@ -67,7 +67,11 @@ const JsonPreview: React.FC<{ data: unknown; maxLength?: number }> = ({
   return (
     <Tooltip
       title={
-        <pre style={{ margin: 0, maxHeight: 300, overflow: "auto" }}>{str}</pre>
+        <pre
+          style={{ margin: 0, maxHeight: 300, overflow: "auto", color: "#fff" }}
+        >
+          {str}
+        </pre>
       }
       placement="left"
     >
@@ -75,7 +79,8 @@ const JsonPreview: React.FC<{ data: unknown; maxLength?: number }> = ({
         style={{
           margin: 0,
           fontSize: 10,
-          background: "#141414",
+          background: "#000",
+          color: "#fff",
           padding: 6,
           borderRadius: 4,
           overflow: "hidden",
@@ -97,12 +102,20 @@ const TaskNode: React.FC<NodeProps> = ({ data, selected }) => {
   const { taskType, label, executionLog } = nodeData;
   const [expanded, setExpanded] = useState(true);
 
-  const hasExecution = executionLog && executionLog.status !== "pending";
+  // 是否有执行状态（包括 pending 和 running）
+  const hasExecutionStatus = executionLog !== undefined;
+  // 是否有执行结果（success 或 error，有输入输出）
+  const hasExecutionResult =
+    executionLog &&
+    (executionLog.status === "success" || executionLog.status === "error");
+
   const borderColor =
     executionLog?.status === "error"
       ? "#ff4d4f"
       : executionLog?.status === "success"
       ? "#52c41a"
+      : executionLog?.status === "running"
+      ? "#1890ff"
       : selected
       ? taskType.color
       : "#303030";
@@ -149,7 +162,7 @@ const TaskNode: React.FC<NodeProps> = ({ data, selected }) => {
             {label}
           </Text>
         </div>
-        {hasExecution && (
+        {hasExecutionStatus && (
           <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
             {executionLog.duration !== undefined && (
               <Text style={{ color: "rgba(255,255,255,0.8)", fontSize: 10 }}>
@@ -162,7 +175,7 @@ const TaskNode: React.FC<NodeProps> = ({ data, selected }) => {
       </div>
 
       {/* 执行日志展示 */}
-      {hasExecution && (
+      {hasExecutionResult && (
         <div style={{ borderTop: "1px solid #303030" }}>
           <div
             style={{
@@ -219,7 +232,7 @@ const TaskNode: React.FC<NodeProps> = ({ data, selected }) => {
       )}
 
       {/* 未执行时显示描述 */}
-      {!hasExecution && (
+      {!hasExecutionStatus && (
         <div style={{ padding: "10px 12px" }}>
           <Text type="secondary" style={{ fontSize: 11 }} ellipsis>
             {taskType.description}

@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/json"
 	"net/http"
 	"time"
 	"workflow-engine/internal/executor"
@@ -9,7 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// executeWorkflow 执行工作流
+// executeWorkflow 执行工作流（流式返回）
 func executeWorkflow(c *gin.Context) {
 	var req types.ExecuteWorkflowRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -19,12 +20,34 @@ func executeWorkflow(c *gin.Context) {
 		return
 	}
 
-	result := runWorkflow(req.Workflow)
-	c.JSON(http.StatusOK, result)
+	// 设置 SSE 响应头
+	c.Writer.Header().Set("Content-Type", "text/event-stream")
+	c.Writer.Header().Set("Cache-Control", "no-cache")
+	c.Writer.Header().Set("Connection", "keep-alive")
+	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+	c.Writer.Header().Set("X-Accel-Buffering", "no")
+
+	// 确保可以 flush
+	flusher, ok := c.Writer.(http.Flusher)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Streaming not supported"})
+		return
+	}
+
+	// 执行工作流并流式返回结果
+	runWorkflowStream(c, flusher, req.Workflow)
 }
 
-// runWorkflow 执行工作流
-func runWorkflow(workflow types.Workflow) types.WorkflowExecutionResult {
+// sendSSE 发送 SSE 事件
+func sendSSE(c *gin.Context, flusher http.Flusher, event string, data interface{}) {
+	jsonData, _ := json.Marshal(data)
+	c.Writer.Write([]byte("event: " + event + "\n"))
+	c.Writer.Write([]byte("data: " + string(jsonData) + "\n\n"))
+	flusher.Flush()
+}
+
+// runWorkflowStream 流式执行工作流
+func runWorkflowStream(c *gin.Context, flusher http.Flusher, workflow types.Workflow) {
 	startTime := time.Now()
 	logs := []types.NodeExecutionLog{}
 	nodeOutputs := make(map[string]types.TaskOutput)
@@ -33,13 +56,15 @@ func runWorkflow(workflow types.Workflow) types.WorkflowExecutionResult {
 	executionOrder := topologicalSort(workflow.Nodes, workflow.Edges)
 
 	if len(executionOrder) != len(workflow.Nodes) {
-		return types.WorkflowExecutionResult{
+		result := types.WorkflowExecutionResult{
 			Status:    "error",
 			StartTime: startTime.Format(time.RFC3339),
 			EndTime:   time.Now().Format(time.RFC3339),
 			Logs:      logs,
 			Error:     "工作流存在循环依赖，无法执行",
 		}
+		sendSSE(c, flusher, "complete", result)
+		return
 	}
 
 	// 构建节点映射
@@ -55,14 +80,16 @@ func runWorkflow(workflow types.Workflow) types.WorkflowExecutionResult {
 		node := nodeMap[nodeID]
 		nodeStartTime := time.Now()
 
-		// 记录开始日志
-		logs = append(logs, types.NodeExecutionLog{
+		// 发送节点开始执行事件
+		startLog := types.NodeExecutionLog{
 			NodeID:    nodeID,
 			NodeName:  node.Label,
 			Status:    "running",
 			Message:   "开始执行任务: " + node.Label,
 			Timestamp: nodeStartTime.Format(time.RFC3339),
-		})
+		}
+		logs = append(logs, startLog)
+		sendSSE(c, flusher, "node_start", startLog)
 
 		// 准备输入
 		input := prepareInput(nodeID, node.Config, workflow.Edges, nodeOutputs)
@@ -77,7 +104,7 @@ func runWorkflow(workflow types.Workflow) types.WorkflowExecutionResult {
 
 		// 检查结果
 		if !output.IsSuccess() {
-			logs = append(logs, types.NodeExecutionLog{
+			errorLog := types.NodeExecutionLog{
 				NodeID:    nodeID,
 				NodeName:  node.Label,
 				Status:    "error",
@@ -86,9 +113,11 @@ func runWorkflow(workflow types.Workflow) types.WorkflowExecutionResult {
 				Output:    &output,
 				Duration:  duration,
 				Timestamp: endTime.Format(time.RFC3339),
-			})
+			}
+			logs = append(logs, errorLog)
+			sendSSE(c, flusher, "node_complete", errorLog)
 
-			return types.WorkflowExecutionResult{
+			result := types.WorkflowExecutionResult{
 				Status:      "error",
 				StartTime:   startTime.Format(time.RFC3339),
 				EndTime:     endTime.Format(time.RFC3339),
@@ -96,10 +125,12 @@ func runWorkflow(workflow types.Workflow) types.WorkflowExecutionResult {
 				FinalOutput: &output,
 				Error:       "任务 \"" + node.Label + "\" 执行失败: " + output.Error,
 			}
+			sendSSE(c, flusher, "complete", result)
+			return
 		}
 
 		// 执行成功
-		logs = append(logs, types.NodeExecutionLog{
+		successLog := types.NodeExecutionLog{
 			NodeID:    nodeID,
 			NodeName:  node.Label,
 			Status:    "success",
@@ -108,18 +139,21 @@ func runWorkflow(workflow types.Workflow) types.WorkflowExecutionResult {
 			Output:    &output,
 			Duration:  duration,
 			Timestamp: endTime.Format(time.RFC3339),
-		})
+		}
+		logs = append(logs, successLog)
+		sendSSE(c, flusher, "node_complete", successLog)
 
 		finalOutput = &output
 	}
 
-	return types.WorkflowExecutionResult{
+	result := types.WorkflowExecutionResult{
 		Status:      "success",
 		StartTime:   startTime.Format(time.RFC3339),
 		EndTime:     time.Now().Format(time.RFC3339),
 		Logs:        logs,
 		FinalOutput: finalOutput,
 	}
+	sendSSE(c, flusher, "complete", result)
 }
 
 // prepareInput 准备节点输入

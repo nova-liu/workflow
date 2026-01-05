@@ -1,11 +1,23 @@
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import './index.css';
-import App from './App';
-import reportWebVitals from './reportWebVitals';
-
+import React from "react";
+import ReactDOM from "react-dom/client";
+import "./index.css";
+import App from "./App";
+import reportWebVitals from "./reportWebVitals";
+// 忽略 ResizeObserver 无害错误
+const originalError = console.error;
+console.error = (...args: any[]) => {
+  if (
+    typeof args[0] === "string" &&
+    args[0].includes(
+      "ResizeObserver loop completed with undelivered notifications"
+    )
+  ) {
+    return;
+  }
+  originalError.call(console, ...args);
+};
 const root = ReactDOM.createRoot(
-  document.getElementById('root') as HTMLElement
+  document.getElementById("root") as HTMLElement
 );
 root.render(
   <React.StrictMode>
