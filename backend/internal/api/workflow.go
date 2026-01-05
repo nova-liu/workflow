@@ -2,90 +2,12 @@ package api
 
 import (
 	"net/http"
-	"sort"
 	"time"
 	"workflow-engine/internal/executor"
 	"workflow-engine/internal/types"
 
 	"github.com/gin-gonic/gin"
 )
-
-// RegisterRoutes 注册所有路由
-func RegisterRoutes(r *gin.Engine) {
-	api := r.Group("/api")
-	{
-		// 健康检查
-		api.GET("/health", healthCheck)
-
-		// 任务相关
-		api.GET("/tasks", listTasks)
-		api.GET("/tasks/:taskType/config", getTaskConfig)
-		api.POST("/tasks/:taskType/execute", executeTask)
-
-		// 工作流相关
-		api.POST("/workflow/execute", executeWorkflow)
-	}
-}
-
-// healthCheck 健康检查
-func healthCheck(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{
-		"status":    "ok",
-		"timestamp": time.Now().Format(time.RFC3339),
-	})
-}
-
-// listTasks 列出所有任务类型
-func listTasks(c *gin.Context) {
-	configs := executor.GetAllConfigs()
-
-	// 按分类整理
-	result := make(map[string][]executor.TaskConfig)
-	for _, config := range configs {
-		result[config.Category] = append(result[config.Category], config)
-	}
-
-	// 排序
-	for category := range result {
-		sort.Slice(result[category], func(i, j int) bool {
-			return result[category][i].ID < result[category][j].ID
-		})
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"tasks": result,
-	})
-}
-
-// getTaskConfig 获取任务配置
-func getTaskConfig(c *gin.Context) {
-	taskType := c.Param("taskType")
-	config, ok := executor.GetConfig(taskType)
-	if !ok {
-		c.JSON(http.StatusNotFound, gin.H{
-			"error": "任务类型不存在: " + taskType,
-		})
-		return
-	}
-	c.JSON(http.StatusOK, config)
-}
-
-// executeTask 执行单个任务
-func executeTask(c *gin.Context) {
-	taskType := c.Param("taskType")
-
-	var req types.ExecuteTaskRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "请求参数错误: " + err.Error(),
-		})
-		return
-	}
-
-	// 执行任务
-	output := executor.Execute(taskType, req.Input)
-	c.JSON(http.StatusOK, output)
-}
 
 // executeWorkflow 执行工作流
 func executeWorkflow(c *gin.Context) {
@@ -155,7 +77,6 @@ func runWorkflow(workflow types.Workflow) types.WorkflowExecutionResult {
 
 		// 检查结果
 		if !output.IsSuccess() {
-			// 执行失败
 			logs = append(logs, types.NodeExecutionLog{
 				NodeID:    nodeID,
 				NodeName:  node.Label,

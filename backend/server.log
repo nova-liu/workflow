@@ -1,0 +1,15 @@
+[GIN-debug] [WARNING] Creating an Engine instance with the Logger and Recovery middleware already attached.
+
+[GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+ - using env:	export GIN_MODE=release
+ - using code:	gin.SetMode(gin.ReleaseMode)
+
+[GIN-debug] GET    /api/health               --> workflow-engine/internal/api.healthCheck (4 handlers)
+[GIN-debug] GET    /api/tasks                --> workflow-engine/internal/api.listTasks (4 handlers)
+[GIN-debug] GET    /api/tasks/:taskType/config --> workflow-engine/internal/api.getTaskConfig (4 handlers)
+[GIN-debug] POST   /api/workflow/execute     --> workflow-engine/internal/api.executeWorkflow (4 handlers)
+2026/01/05 15:05:48 Workflow Engine starting on :8081
+[GIN-debug] [WARNING] You trusted all proxies, this is NOT safe. We recommend you to set a value.
+Please check https://pkg.go.dev/github.com/gin-gonic/gin#readme-don-t-trust-all-proxies for details.
+[GIN-debug] Listening and serving HTTP on :8081
+[GIN] 2026/01/05 - 15:05:52 | 200 |     676.208µs |             ::1 | GET      "/api/tasks"

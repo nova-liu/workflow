@@ -1,6 +1,9 @@
 import React, { memo } from "react";
 import { Handle, Position, NodeProps } from "@xyflow/react";
+import { Typography } from "antd";
 import { TaskType } from "../types/workflow";
+
+const { Text } = Typography;
 
 export interface TaskNodeData extends Record<string, unknown> {
   taskType: TaskType;
@@ -14,34 +17,69 @@ const TaskNode: React.FC<NodeProps> = ({ data, selected }) => {
 
   return (
     <div
-      className={`task-node ${selected ? "selected" : ""}`}
       style={{
-        borderColor: taskType.color,
-        boxShadow: selected ? `0 0 0 2px ${taskType.color}` : undefined,
+        background: "#1f1f1f",
+        borderRadius: 8,
+        border: `2px solid ${selected ? taskType.color : "#303030"}`,
+        boxShadow: selected
+          ? `0 0 12px ${taskType.color}40`
+          : "0 2px 8px rgba(0,0,0,0.3)",
+        minWidth: 180,
+        transition: "all 0.2s",
       }}
     >
       <Handle
         type="target"
         position={Position.Top}
-        className="task-handle"
-        style={{ background: taskType.color }}
+        style={{
+          background: taskType.color,
+          width: 10,
+          height: 10,
+          border: "2px solid #1f1f1f",
+        }}
       />
 
-      <div className="task-node-header" style={{ background: taskType.color }}>
-        <span className="task-node-icon">{taskType.icon}</span>
-        <span className="task-node-type">{taskType.name}</span>
+      <div
+        style={{
+          background: taskType.color,
+          padding: "8px 12px",
+          borderRadius: "6px 6px 0 0",
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+        }}
+      >
+        <span style={{ fontSize: 16 }}>{taskType.icon}</span>
+        <Text strong style={{ color: "#fff", fontSize: 12 }}>
+          {taskType.name}
+        </Text>
       </div>
 
-      <div className="task-node-body">
-        <div className="task-node-label">{label}</div>
-        <div className="task-node-description">{taskType.description}</div>
+      <div style={{ padding: "10px 12px" }}>
+        <Text
+          style={{
+            color: "#fff",
+            fontSize: 13,
+            display: "block",
+            marginBottom: 4,
+          }}
+        >
+          {label}
+        </Text>
+        <Text type="secondary" style={{ fontSize: 11 }} ellipsis>
+          {taskType.description}
+        </Text>
       </div>
 
       <Handle
         type="source"
         position={Position.Bottom}
-        className="task-handle"
-        style={{ background: taskType.color }}
+        style={{
+          background: taskType.color,
+          width: 10,
+          height: 10,
+          border: "2px solid #1f1f1f",
+        }}
       />
     </div>
   );

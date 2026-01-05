@@ -18,6 +18,14 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { v4 as uuidv4 } from "uuid";
+import { Button, Space, Input, Typography, Divider, message } from "antd";
+import {
+  PlayCircleOutlined,
+  DeleteOutlined,
+  DownloadOutlined,
+  FileTextOutlined,
+  LoadingOutlined,
+} from "@ant-design/icons";
 import TaskNode, { TaskNodeData } from "./TaskNode";
 import TaskPanel from "./TaskPanel";
 import TaskConfigPanel from "./TaskConfigPanel";
@@ -33,6 +41,8 @@ import {
   Workflow,
   NodeExecutionLog,
 } from "../api/workflowApi";
+
+const { Text } = Typography;
 
 const nodeTypes = {
   taskNode: TaskNode,
@@ -162,7 +172,7 @@ const WorkflowCanvasInner: React.FC = () => {
   // 执行工作流
   const executeWorkflow = useCallback(async () => {
     if (nodes.length === 0) {
-      alert("请先添加任务节点");
+      message.warning("请先添加任务节点");
       return;
     }
 
@@ -303,28 +313,38 @@ const WorkflowCanvasInner: React.FC = () => {
           />
           <Background variant={BackgroundVariant.Dots} gap={20} size={1} />
 
-          <Panel position="top-right" className="workflow-toolbar">
-            <button
-              onClick={executeWorkflow}
-              className="toolbar-btn execute"
-              disabled={executionStatus === "running" || nodes.length === 0}
-            >
-              {executionStatus === "running" ? "⏳ 执行中..." : "▶️ 执行"}
-            </button>
-            <button onClick={clearWorkflow} className="toolbar-btn danger">
-              🗑️ 清空
-            </button>
-            <button onClick={exportWorkflow} className="toolbar-btn primary">
-              📥 导出
-            </button>
-            {executionLogs.length > 0 && (
-              <button
-                onClick={() => setShowLogPanel(true)}
-                className="toolbar-btn secondary"
+          <Panel position="top-right">
+            <Space>
+              <Button
+                type="primary"
+                icon={
+                  executionStatus === "running" ? (
+                    <LoadingOutlined />
+                  ) : (
+                    <PlayCircleOutlined />
+                  )
+                }
+                onClick={executeWorkflow}
+                disabled={executionStatus === "running" || nodes.length === 0}
+                loading={executionStatus === "running"}
               >
-                📋 日志
-              </button>
-            )}
+                {executionStatus === "running" ? "执行中" : "执行"}
+              </Button>
+              <Button icon={<DeleteOutlined />} onClick={clearWorkflow} danger>
+                清空
+              </Button>
+              <Button icon={<DownloadOutlined />} onClick={exportWorkflow}>
+                导出
+              </Button>
+              {executionLogs.length > 0 && (
+                <Button
+                  icon={<FileTextOutlined />}
+                  onClick={() => setShowLogPanel(true)}
+                >
+                  日志
+                </Button>
+              )}
+            </Space>
           </Panel>
         </ReactFlow>
 
@@ -344,11 +364,21 @@ const WorkflowCanvasInner: React.FC = () => {
           const nodeData = selectedNode.data as TaskNodeData;
           return (
             <div className="node-config-panel">
-              <h3>节点配置</h3>
-              <div className="config-section">
-                <label>节点名称</label>
-                <input
-                  type="text"
+              <Text
+                strong
+                style={{ fontSize: 16, marginBottom: 16, display: "block" }}
+              >
+                节点配置
+              </Text>
+
+              <div style={{ marginBottom: 16 }}>
+                <Text
+                  type="secondary"
+                  style={{ fontSize: 12, display: "block", marginBottom: 4 }}
+                >
+                  节点名称
+                </Text>
+                <Input
                   value={nodeData.label}
                   onChange={(e) => {
                     setNodes((nds) =>
@@ -368,25 +398,46 @@ const WorkflowCanvasInner: React.FC = () => {
                   }}
                 />
               </div>
-              <div className="config-section">
-                <label>任务类型</label>
-                <div className="config-value">
-                  <span>{nodeData.taskType.icon}</span>
-                  <span>{nodeData.taskType.name}</span>
+
+              <div style={{ marginBottom: 16 }}>
+                <Text
+                  type="secondary"
+                  style={{ fontSize: 12, display: "block", marginBottom: 4 }}
+                >
+                  任务类型
+                </Text>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ fontSize: 18 }}>{nodeData.taskType.icon}</span>
+                  <Text>{nodeData.taskType.name}</Text>
                 </div>
-              </div>
-              <div className="config-section">
-                <label>描述</label>
-                <div className="config-description">
-                  {nodeData.taskType.description}
-                </div>
-              </div>
-              <div className="config-section">
-                <label>节点 ID</label>
-                <div className="config-id">{selectedNode.id}</div>
               </div>
 
-              {/* 任务参数配置面板 */}
+              <div style={{ marginBottom: 16 }}>
+                <Text
+                  type="secondary"
+                  style={{ fontSize: 12, display: "block", marginBottom: 4 }}
+                >
+                  描述
+                </Text>
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  {nodeData.taskType.description}
+                </Text>
+              </div>
+
+              <div style={{ marginBottom: 16 }}>
+                <Text
+                  type="secondary"
+                  style={{ fontSize: 12, display: "block", marginBottom: 4 }}
+                >
+                  节点 ID
+                </Text>
+                <Text code style={{ fontSize: 11 }}>
+                  {selectedNode.id}
+                </Text>
+              </div>
+
+              <Divider style={{ margin: "16px 0" }} />
+
               <TaskConfigPanel
                 taskTypeId={nodeData.taskType.id}
                 initialValues={nodeData.config as TaskInput}
@@ -394,10 +445,7 @@ const WorkflowCanvasInner: React.FC = () => {
                   setNodes((nds) =>
                     nds.map((node) =>
                       node.id === selectedNode.id
-                        ? {
-                            ...node,
-                            data: { ...node.data, config: newConfig },
-                          }
+                        ? { ...node, data: { ...node.data, config: newConfig } }
                         : node
                     )
                   );
@@ -408,8 +456,12 @@ const WorkflowCanvasInner: React.FC = () => {
                 }}
               />
 
-              <button
-                className="delete-node-btn"
+              <Divider style={{ margin: "16px 0" }} />
+
+              <Button
+                danger
+                block
+                icon={<DeleteOutlined />}
                 onClick={() => {
                   setNodes((nds) =>
                     nds.filter((node) => node.id !== selectedNode.id)
@@ -424,8 +476,8 @@ const WorkflowCanvasInner: React.FC = () => {
                   setSelectedNode(null);
                 }}
               >
-                🗑️ 删除节点
-              </button>
+                删除节点
+              </Button>
             </div>
           );
         })()}

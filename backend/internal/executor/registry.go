@@ -100,13 +100,6 @@ func Execute(taskType string, input types.TaskInput) types.TaskOutput {
 
 // InitExecutors 初始化所有执行器
 func InitExecutors() {
-	registerScheduleTrigger()
 	registerHTTPRequest()
-	registerDelay()
-	registerLog()
-	registerDataTransform()
-	registerJSONParse()
-	registerFilter()
-	registerAggregate()
 	registerIfCondition()
 }

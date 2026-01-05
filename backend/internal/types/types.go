@@ -73,12 +73,6 @@ type Workflow struct {
 	Edges []WorkflowEdge `json:"edges"`
 }
 
-// ExecuteTaskRequest 执行单个任务请求
-type ExecuteTaskRequest struct {
-	TaskType string    `json:"taskType"`
-	Input    TaskInput `json:"input"`
-}
-
 // ExecuteWorkflowRequest 执行工作流请求
 type ExecuteWorkflowRequest struct {
 	Workflow Workflow `json:"workflow"`
