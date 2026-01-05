@@ -52,22 +52,6 @@
   overflow-y: auto;
 }
 
-/* 执行日志面板 */
-.execution-log-panel {
-  position: absolute;
-  bottom: 20px;
-  right: 20px;
-  width: 500px;
-  max-height: 400px;
-  background: #1f1f1f;
-  border: 1px solid #303030;
-  border-radius: 8px;
-  display: flex;
-  flex-direction: column;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-  z-index: 100;
-}
-
 /* React Flow 主题覆盖 */
 .react-flow__controls {
   background: #1f1f1f !important;
@@ -117,26 +101,22 @@
 
 /* 滚动条样式 */
 .task-panel-body::-webkit-scrollbar,
-.node-config-panel::-webkit-scrollbar,
-.execution-log-panel::-webkit-scrollbar {
+.node-config-panel::-webkit-scrollbar {
   width: 6px;
 }
 
 .task-panel-body::-webkit-scrollbar-track,
-.node-config-panel::-webkit-scrollbar-track,
-.execution-log-panel::-webkit-scrollbar-track {
+.node-config-panel::-webkit-scrollbar-track {
   background: transparent;
 }
 
 .task-panel-body::-webkit-scrollbar-thumb,
-.node-config-panel::-webkit-scrollbar-thumb,
-.execution-log-panel::-webkit-scrollbar-thumb {
+.node-config-panel::-webkit-scrollbar-thumb {
   background: #303030;
   border-radius: 3px;
 }
 
 .task-panel-body::-webkit-scrollbar-thumb:hover,
-.node-config-panel::-webkit-scrollbar-thumb:hover,
-.execution-log-panel::-webkit-scrollbar-thumb:hover {
+.node-config-panel::-webkit-scrollbar-thumb:hover {
   background: #505050;
 }

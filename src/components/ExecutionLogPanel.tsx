@@ -1,14 +1,12 @@
 import React from "react";
-import { Button, Tag, Typography, Collapse, Space, Spin } from "antd";
+import { Button, Tag, Typography, Space, Spin } from "antd";
 import {
   CloseOutlined,
   StopOutlined,
-  ClockCircleOutlined,
   SyncOutlined,
   CheckCircleOutlined,
   CloseCircleOutlined,
   MinusCircleOutlined,
-  PauseCircleOutlined,
 } from "@ant-design/icons";
 import {
   ExecutionLogEntry,
@@ -25,27 +23,19 @@ interface ExecutionLogPanelProps {
   onCancel?: () => void;
 }
 
-const getStatusIcon = (status: NodeExecutionStatus | ExecutionStatus) => {
-  const iconStyle = { fontSize: 14 };
-  switch (status) {
-    case "pending":
-      return <ClockCircleOutlined style={{ ...iconStyle, color: "#faad14" }} />;
-    case "running":
-      return <SyncOutlined spin style={{ ...iconStyle, color: "#1890ff" }} />;
-    case "success":
-      return <CheckCircleOutlined style={{ ...iconStyle, color: "#52c41a" }} />;
-    case "error":
-      return <CloseCircleOutlined style={{ ...iconStyle, color: "#ff4d4f" }} />;
-    case "skipped":
-      return <MinusCircleOutlined style={{ ...iconStyle, color: "#8c8c8c" }} />;
-    case "cancelled":
-      return <PauseCircleOutlined style={{ ...iconStyle, color: "#8c8c8c" }} />;
-    default:
-      return <ClockCircleOutlined style={{ ...iconStyle, color: "#8c8c8c" }} />;
-  }
+const getStatusTag = (status: NodeExecutionStatus) => {
+  const config: Record<NodeExecutionStatus, { color: string; text: string }> = {
+    pending: { color: "default", text: "等待" },
+    running: { color: "processing", text: "执行中" },
+    success: { color: "success", text: "成功" },
+    error: { color: "error", text: "失败" },
+    skipped: { color: "default", text: "跳过" },
+  };
+  const { color, text } = config[status] || config.pending;
+  return <Tag color={color}>{text}</Tag>;
 };
 
-const getStatusTag = (status: ExecutionStatus) => {
+const getWorkflowStatusTag = (status: ExecutionStatus) => {
   const config: Record<ExecutionStatus, { color: string; text: string }> = {
     idle: { color: "default", text: "等待执行" },
     running: { color: "processing", text: "执行中..." },
@@ -58,35 +48,96 @@ const getStatusTag = (status: ExecutionStatus) => {
   return <Tag color={color}>{text}</Tag>;
 };
 
-const formatTime = (date: Date): string => {
-  return date.toLocaleTimeString("zh-CN", {
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  });
-};
-
 const formatDuration = (ms: number): string => {
   if (ms < 1000) return `${ms}ms`;
   return `${(ms / 1000).toFixed(2)}s`;
 };
 
-const JsonDisplay: React.FC<{ data: unknown }> = ({ data }) => {
+const JsonBlock: React.FC<{ label: string; data: unknown }> = ({
+  label,
+  data,
+}) => {
   if (data === undefined || data === null) return null;
   return (
-    <pre
+    <div style={{ flex: 1, minWidth: 0 }}>
+      <Text
+        type="secondary"
+        style={{ fontSize: 11, marginBottom: 4, display: "block" }}
+      >
+        {label}
+      </Text>
+      <pre
+        style={{
+          background: "#141414",
+          padding: 8,
+          borderRadius: 4,
+          fontSize: 11,
+          overflow: "auto",
+          maxHeight: 150,
+          margin: 0,
+          whiteSpace: "pre-wrap",
+          wordBreak: "break-all",
+        }}
+      >
+        {JSON.stringify(data, null, 2)}
+      </pre>
+    </div>
+  );
+};
+
+// 合并同一个节点的日志，只保留最终状态
+const mergeLogsByNode = (logs: ExecutionLogEntry[]): ExecutionLogEntry[] => {
+  const nodeMap = new Map<string, ExecutionLogEntry>();
+  logs.forEach((log) => {
+    const existing = nodeMap.get(log.nodeId);
+    if (!existing || log.status !== "pending") {
+      nodeMap.set(log.nodeId, log);
+    }
+  });
+  return Array.from(nodeMap.values());
+};
+
+const TaskLogCard: React.FC<{ log: ExecutionLogEntry }> = ({ log }) => {
+  return (
+    <div
       style={{
-        background: "#1f1f1f",
-        padding: 8,
-        borderRadius: 4,
-        fontSize: 11,
-        overflow: "auto",
-        maxHeight: 200,
-        margin: 0,
+        background: "#262626",
+        borderRadius: 8,
+        padding: 12,
+        marginBottom: 8,
+        border:
+          log.status === "error" ? "1px solid #ff4d4f" : "1px solid #303030",
       }}
     >
-      {JSON.stringify(data, null, 2)}
-    </pre>
+      {/* 头部：任务名称 + 状态 + 耗时 */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          marginBottom: 8,
+        }}
+      >
+        <Space>
+          <Text strong>{log.nodeName}</Text>
+          {getStatusTag(log.status)}
+        </Space>
+        {log.duration !== undefined && (
+          <Text type="secondary" style={{ fontSize: 12 }}>
+            {formatDuration(log.duration)}
+          </Text>
+        )}
+      </div>
+
+      {/* 输入输出并排显示 */}
+      <div style={{ display: "flex", gap: 12 }}>
+        <JsonBlock label="输入" data={log.input} />
+        <JsonBlock
+          label={log.status === "error" ? "错误" : "输出"}
+          data={log.output}
+        />
+      </div>
+    </div>
   );
 };
 
@@ -104,67 +155,11 @@ const ExecutionLogPanel: React.FC<ExecutionLogPanelProps> = ({
     }
   }, [logs]);
 
-  const collapseItems = logs.map((log, index) => {
-    const hasDetails =
-      (log.input && Object.keys(log.input).length > 0) || log.output;
-
-    return {
-      key: `${log.nodeId}-${index}`,
-      label: (
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-            width: "100%",
-          }}
-        >
-          {getStatusIcon(log.status)}
-          <Text
-            type="secondary"
-            style={{ fontSize: 11, fontFamily: "monospace" }}
-          >
-            {formatTime(log.timestamp)}
-          </Text>
-          <Text strong style={{ flex: 1 }}>
-            {log.nodeName}
-          </Text>
-          {log.duration !== undefined && (
-            <Tag>{formatDuration(log.duration)}</Tag>
-          )}
-        </div>
-      ),
-      children: hasDetails ? (
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          <Text type="secondary" style={{ fontSize: 12 }}>
-            {log.message}
-          </Text>
-          {log.input && Object.keys(log.input).length > 0 && (
-            <div>
-              <Text type="secondary" style={{ fontSize: 11 }}>
-                📥 输入参数
-              </Text>
-              <JsonDisplay data={log.input} />
-            </div>
-          )}
-          {log.output && (
-            <div>
-              <Text type="secondary" style={{ fontSize: 11 }}>
-                {log.status === "error" ? "❌ 错误详情" : "📤 输出结果"}
-              </Text>
-              <JsonDisplay data={log.output} />
-            </div>
-          )}
-        </div>
-      ) : (
-        <Text type="secondary">{log.message}</Text>
-      ),
-      collapsible: hasDetails ? undefined : ("header" as const),
-    };
-  });
+  const mergedLogs = mergeLogsByNode(logs);
 
   return (
     <div className="execution-log-panel">
+      {/* 头部 */}
       <div
         style={{
           display: "flex",
@@ -175,9 +170,17 @@ const ExecutionLogPanel: React.FC<ExecutionLogPanelProps> = ({
         }}
       >
         <Space>
-          {getStatusIcon(status)}
+          {status === "running" ? (
+            <SyncOutlined spin style={{ color: "#1890ff" }} />
+          ) : status === "success" || status === "completed" ? (
+            <CheckCircleOutlined style={{ color: "#52c41a" }} />
+          ) : status === "error" ? (
+            <CloseCircleOutlined style={{ color: "#ff4d4f" }} />
+          ) : (
+            <MinusCircleOutlined style={{ color: "#8c8c8c" }} />
+          )}
           <Text strong>执行日志</Text>
-          {getStatusTag(status)}
+          {getWorkflowStatusTag(status)}
         </Space>
         <Space>
           {status === "running" && onCancel && (
@@ -199,22 +202,17 @@ const ExecutionLogPanel: React.FC<ExecutionLogPanelProps> = ({
         </Space>
       </div>
 
+      {/* 日志内容 */}
       <div
         ref={logContainerRef}
         style={{ flex: 1, overflow: "auto", padding: 12 }}
       >
-        {logs.length === 0 ? (
+        {mergedLogs.length === 0 ? (
           <div style={{ textAlign: "center", padding: 40 }}>
             <Text type="secondary">暂无执行日志</Text>
           </div>
         ) : (
-          <Collapse
-            size="small"
-            items={collapseItems}
-            defaultActiveKey={logs
-              .filter((l) => l.status === "error")
-              .map((_, i) => `${_.nodeId}-${logs.indexOf(_)}`)}
-          />
+          mergedLogs.map((log) => <TaskLogCard key={log.nodeId} log={log} />)
         )}
 
         {status === "running" && (
@@ -233,20 +231,23 @@ const ExecutionLogPanel: React.FC<ExecutionLogPanelProps> = ({
         )}
       </div>
 
-      {status === "success" && logs.length > 0 && (
-        <div
-          style={{
-            padding: "12px 16px",
-            borderTop: "1px solid #303030",
-            background: "rgba(82, 196, 26, 0.1)",
-          }}
-        >
-          <Text type="success">
-            ✅ 工作流执行完成，共{" "}
-            {logs.filter((l) => l.status === "success").length} 个任务成功
-          </Text>
-        </div>
-      )}
+      {/* 底部状态 */}
+      {(status === "success" || status === "completed") &&
+        mergedLogs.length > 0 && (
+          <div
+            style={{
+              padding: "12px 16px",
+              borderTop: "1px solid #303030",
+              background: "rgba(82, 196, 26, 0.1)",
+            }}
+          >
+            <Text type="success">
+              ✅ 工作流执行完成，共{" "}
+              {mergedLogs.filter((l) => l.status === "success").length}{" "}
+              个任务成功
+            </Text>
+          </div>
+        )}
 
       {status === "error" && (
         <div
@@ -256,7 +257,7 @@ const ExecutionLogPanel: React.FC<ExecutionLogPanelProps> = ({
             background: "rgba(255, 77, 79, 0.1)",
           }}
         >
-          <Text type="danger">❌ 工作流执行失败，请检查错误日志</Text>
+          <Text type="danger">❌ 工作流执行失败</Text>
         </div>
       )}
     </div>

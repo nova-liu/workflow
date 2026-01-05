@@ -23,19 +23,14 @@ import {
   PlayCircleOutlined,
   DeleteOutlined,
   DownloadOutlined,
-  FileTextOutlined,
   LoadingOutlined,
+  ClearOutlined,
 } from "@ant-design/icons";
-import TaskNode, { TaskNodeData } from "./TaskNode";
+import TaskNode, { TaskNodeData, ExecutionLog } from "./TaskNode";
 import TaskPanel from "./TaskPanel";
 import TaskConfigPanel from "./TaskConfigPanel";
-import ExecutionLogPanel from "./ExecutionLogPanel";
 import { TaskType, TaskInput } from "../types/workflow";
-import {
-  ExecutionLogEntry,
-  ExecutionStatus,
-  NodeExecutionState,
-} from "../engine/WorkflowExecutor";
+import { ExecutionStatus } from "../engine/WorkflowExecutor";
 import {
   executeWorkflow as apiExecuteWorkflow,
   Workflow,
@@ -61,12 +56,6 @@ const WorkflowCanvasInner: React.FC = () => {
   // 执行状态
   const [executionStatus, setExecutionStatus] =
     useState<ExecutionStatus>("idle");
-  const [executionLogs, setExecutionLogs] = useState<ExecutionLogEntry[]>([]);
-  const [showLogPanel, setShowLogPanel] = useState(false);
-  const [nodeExecutionStates, setNodeExecutionStates] = useState<
-    Record<string, NodeExecutionState>
-  >({});
-  const abortControllerRef = useRef<AbortController | null>(null);
 
   const onConnect: OnConnect = useCallback(
     (params: Connection) => {
@@ -176,21 +165,25 @@ const WorkflowCanvasInner: React.FC = () => {
       return;
     }
 
-    // 重置状态
-    setExecutionLogs([]);
-    setNodeExecutionStates({});
-    setShowLogPanel(true);
+    // 重置所有节点的执行日志
+    setNodes((nds) =>
+      nds.map((node) => ({
+        ...node,
+        data: { ...node.data, executionLog: undefined },
+      }))
+    );
     setExecutionStatus("running");
 
-    // 添加开始日志
-    const startLog: ExecutionLogEntry = {
-      nodeId: "workflow",
-      nodeName: "工作流",
-      status: "running",
-      message: "开始执行工作流...",
-      timestamp: new Date(),
-    };
-    setExecutionLogs([startLog]);
+    // 设置所有节点为 pending 状态
+    setNodes((nds) =>
+      nds.map((node) => ({
+        ...node,
+        data: {
+          ...node.data,
+          executionLog: { status: "pending" as const },
+        },
+      }))
+    );
 
     // 构建工作流数据
     const workflow: Workflow = {
@@ -214,70 +207,56 @@ const WorkflowCanvasInner: React.FC = () => {
       // 调用后端 API 执行
       const result = await apiExecuteWorkflow(workflow);
 
-      // 转换后端日志为前端格式
-      const logs: ExecutionLogEntry[] = result.logs.map(
-        (log: NodeExecutionLog) => ({
-          nodeId: log.nodeId,
-          nodeName: log.nodeName,
-          status: log.status as "pending" | "running" | "success" | "error",
-          message: log.message,
-          input: log.input,
-          output: log.output,
-          duration: log.duration,
-          timestamp: new Date(log.timestamp),
-        })
-      );
-
-      // 更新节点状态
-      const newNodeStates: Record<string, NodeExecutionState> = {};
+      // 更新每个节点的执行日志
+      const nodeLogMap = new Map<string, ExecutionLog>();
       result.logs.forEach((log: NodeExecutionLog) => {
         if (log.status === "success" || log.status === "error") {
-          newNodeStates[log.nodeId] = {
-            status: log.status,
+          nodeLogMap.set(log.nodeId, {
+            status: log.status as "success" | "error",
+            input: log.input,
             output: log.output,
-          };
+            duration: log.duration,
+          });
         }
       });
 
-      setExecutionLogs([startLog, ...logs]);
-      setNodeExecutionStates(newNodeStates);
+      setNodes((nds) =>
+        nds.map((node) => {
+          const log = nodeLogMap.get(node.id);
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              executionLog: log || { status: "skipped" as const },
+            },
+          };
+        })
+      );
+
       setExecutionStatus(result.status === "success" ? "completed" : "error");
 
-      // 添加完成日志
-      const endLog: ExecutionLogEntry = {
-        nodeId: "workflow",
-        nodeName: "工作流",
-        status: result.status === "success" ? "success" : "error",
-        message:
-          result.status === "success"
-            ? "工作流执行完成"
-            : `工作流执行失败: ${result.error}`,
-        timestamp: new Date(),
-      };
-      setExecutionLogs((prev) => [...prev, endLog]);
+      if (result.status === "success") {
+        message.success("工作流执行成功");
+      } else {
+        message.error(`工作流执行失败: ${result.error}`);
+      }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "未知错误";
       setExecutionStatus("error");
-      setExecutionLogs((prev) => [
-        ...prev,
-        {
-          nodeId: "workflow",
-          nodeName: "工作流",
-          status: "error",
-          message: `执行失败: ${errorMessage}`,
-          timestamp: new Date(),
-        },
-      ]);
+      message.error(`执行失败: ${errorMessage}`);
     }
-  }, [nodes, edges]);
+  }, [nodes, edges, setNodes]);
 
-  // 取消执行
-  const cancelExecution = useCallback(() => {
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-      setExecutionStatus("cancelled");
-    }
-  }, []);
+  // 清除执行日志
+  const clearExecutionLogs = useCallback(() => {
+    setNodes((nds) =>
+      nds.map((node) => ({
+        ...node,
+        data: { ...node.data, executionLog: undefined },
+      }))
+    );
+    setExecutionStatus("idle");
+  }, [setNodes]);
 
   return (
     <div className="workflow-container">
@@ -330,33 +309,20 @@ const WorkflowCanvasInner: React.FC = () => {
               >
                 {executionStatus === "running" ? "执行中" : "执行"}
               </Button>
+              {executionStatus !== "idle" && executionStatus !== "running" && (
+                <Button icon={<ClearOutlined />} onClick={clearExecutionLogs}>
+                  清除日志
+                </Button>
+              )}
               <Button icon={<DeleteOutlined />} onClick={clearWorkflow} danger>
                 清空
               </Button>
               <Button icon={<DownloadOutlined />} onClick={exportWorkflow}>
                 导出
               </Button>
-              {executionLogs.length > 0 && (
-                <Button
-                  icon={<FileTextOutlined />}
-                  onClick={() => setShowLogPanel(true)}
-                >
-                  日志
-                </Button>
-              )}
             </Space>
           </Panel>
         </ReactFlow>
-
-        {/* 执行日志面板 */}
-        {showLogPanel && (
-          <ExecutionLogPanel
-            logs={executionLogs}
-            status={executionStatus}
-            onClose={() => setShowLogPanel(false)}
-            onCancel={cancelExecution}
-          />
-        )}
       </div>
 
       {selectedNode &&
