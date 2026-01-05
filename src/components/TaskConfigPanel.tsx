@@ -38,19 +38,7 @@ const ParamInput: React.FC<{
   param: TaskConfigParam;
   value: unknown;
   onChange: (value: unknown) => void;
-  allValues: TaskInput;
-}> = ({ param, value, onChange, allValues }) => {
-  const shouldShow = () => {
-    if (param.name === "cronExpression")
-      return allValues.scheduleType === "cron";
-    if (param.name === "intervalSeconds")
-      return allValues.scheduleType === "interval";
-    if (param.name === "executeAt") return allValues.scheduleType === "once";
-    return true;
-  };
-
-  if (!shouldShow()) return null;
-
+}> = ({ param, value, onChange }) => {
   const renderInput = () => {
     switch (param.type) {
       case "boolean":
@@ -270,7 +258,6 @@ const TaskConfigPanel: React.FC<TaskConfigPanelProps> = ({
             param={param}
             value={values[param.name]}
             onChange={(value) => handleValueChange(param.name, value)}
-            allValues={values}
           />
         ))}
       </Form>

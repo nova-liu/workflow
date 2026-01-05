@@ -97,29 +97,6 @@ export async function getTaskConfig(taskType: string): Promise<TaskConfig> {
   return response.json();
 }
 
-// 执行单个任务
-export async function executeTask(
-  taskType: string,
-  input: TaskInput
-): Promise<TaskOutput> {
-  const response = await fetch(`${API_BASE_URL}/tasks/${taskType}/execute`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ input }),
-  });
-
-  if (!response.ok) {
-    return {
-      error: `HTTP 错误: ${response.status}`,
-      data: null,
-    };
-  }
-
-  return response.json();
-}
-
 // 执行工作流
 export async function executeWorkflow(
   workflow: Workflow

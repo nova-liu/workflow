@@ -50,7 +50,7 @@ export interface TaskType {
   executor?: TaskExecutor;
 }
 
-export type TaskCategory = "trigger" | "action" | "condition" | "transform";
+export type TaskCategory = "action" | "condition";
 
 // 分类配置
 export interface CategoryConfig {
@@ -60,31 +60,15 @@ export interface CategoryConfig {
 
 // 默认分类图标和颜色映射
 export const CATEGORY_CONFIG: Record<TaskCategory, CategoryConfig> = {
-  trigger: { icon: "🎯", color: "#4CAF50" },
   action: { icon: "⚡", color: "#2196F3" },
   condition: { icon: "❓", color: "#FF9800" },
-  transform: { icon: "🔄", color: "#9C27B0" },
 };
 
 // 默认任务图标映射（根据任务 ID 前缀）
 export const getTaskIcon = (taskId: string): string => {
   const iconMap: Record<string, string> = {
     http: "🌐",
-    schedule: "⏰",
-    webhook: "🔔",
-    delay: "⏱️",
-    log: "📝",
-    email: "📧",
-    database: "🗄️",
-    file: "📁",
-    notification: "🔔",
     if: "❓",
-    switch: "🔀",
-    loop: "🔄",
-    data: "🔧",
-    json: "📋",
-    filter: "🔍",
-    aggregate: "📊",
   };
 
   for (const [prefix, icon] of Object.entries(iconMap)) {
@@ -97,10 +81,8 @@ export const getTaskIcon = (taskId: string): string => {
 
 // 获取分类名称
 export const CATEGORY_NAMES: Record<TaskCategory, string> = {
-  trigger: "触发器",
   action: "操作",
   condition: "条件",
-  transform: "转换",
 };
 
 // 创建成功的任务输出

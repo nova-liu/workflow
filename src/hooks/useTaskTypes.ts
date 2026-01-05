@@ -46,10 +46,8 @@ export function useTaskTypes(): UseTaskTypesResult {
   const [groupedTasks, setGroupedTasks] = useState<
     Record<TaskCategory, TaskType[]>
   >({
-    trigger: [],
     action: [],
     condition: [],
-    transform: [],
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -64,10 +62,8 @@ export function useTaskTypes(): UseTaskTypesResult {
       // 将后端数据转换为前端 TaskType 格式
       const allTasks: TaskType[] = [];
       const grouped: Record<TaskCategory, TaskType[]> = {
-        trigger: [],
         action: [],
         condition: [],
-        transform: [],
       };
 
       // 遍历每个分类

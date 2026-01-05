@@ -33,12 +33,7 @@ const TaskPanel: React.FC<TaskPanelProps> = ({ onDragStart }) => {
     return acc;
   }, {} as Record<TaskCategory, TaskType[]>);
 
-  const categories: TaskCategory[] = [
-    "trigger",
-    "action",
-    "condition",
-    "transform",
-  ];
+  const categories: TaskCategory[] = ["action", "condition"];
 
   if (loading) {
     return (
