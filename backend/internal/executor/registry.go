@@ -102,4 +102,5 @@ func Execute(taskType string, input types.TaskInput) types.TaskOutput {
 func InitExecutors() {
 	registerHTTPRequest()
 	registerIfCondition()
+	registerSendEmail()
 }
