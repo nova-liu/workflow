@@ -103,4 +103,5 @@ func InitExecutors() {
 	registerHTTPRequest()
 	registerIfCondition()
 	registerSendEmail()
+	registerAliyunSMS()
 }
